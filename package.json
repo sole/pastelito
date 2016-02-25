@@ -18,6 +18,7 @@
   "homepage": "https://github.com/sole/pastelito#readme",
   "dependencies": {
     "chalk": "^1.1.1",
+    "linux-user": "^0.1.0",
     "shelljs": "^0.6.0"
   }
 }
