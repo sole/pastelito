@@ -9,17 +9,38 @@ addWheelGroup();
 
 
 async function addWheelGroup() {
-	//linuxUser.getGroups(function(err, info) {
-	//	console.log(info);
-	//});
-
 	var groups = await getGroups();
-	console.log(groups);
+	var name = 'wheel';
+	if(findGroup(groups, name) === undefined) {
+		console.log('didnt find', name, 'adding');
+		await addGroup(name);
+	} else {
+		console.log(name, 'already exists');
+	}
 }
 
 async function getGroups() {
 	return new Promise(function(resolve, reject) {
 		linuxUser.getGroups(function(err, info) {
+			if(err) {
+				reject(err);
+			} else {
+				resolve(info);
+			}
+		});
+	});
+}
+
+function findGroup(groups, name) {
+	var group = groups.find((el) => {
+		return el.groupname === name;
+	});
+	return group;
+}
+
+async function addGroup(name) {
+	return new Promise(function(resolve, reject) {
+		linuxUser.addGroup(name, function(err, info) {
 			if(err) {
 				reject(err);
 			} else {
