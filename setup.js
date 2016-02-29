@@ -7,7 +7,7 @@ var chalk = require('chalk');
 var shelljs = require('shelljs');
 var mkdirp = require('mkdirp-then');
 var chownr = promisify('chownr');
-var linuxUser = require('linux-user');
+var linuxUser = promisify('linux-user');
 
 console.log(chalk.black(chalk.bgYellow('*** pastelito lazy installer FTW ***')));
 
@@ -38,49 +38,16 @@ async function main() {
 	await setupIpTables(ipTablesConfigPath, ipTablesStartScript);
 }
 
-// Add wheel group
+// Add new group for sudoers
 
 async function addGroupIfNotExists(name) {
 	console.log('add group', name);
-	var groups = await getGroups();
-	if(findGroup(groups, name) === undefined) {
-		console.log('didnt find', name, 'adding');
-		await addGroup(name);
+	var groupInfo = await linuxUser.getGroupInfo(name);
+	if(groupInfo === null) {
+		await linuxUser.addGroup(name);
 	} else {
 		console.log(name, 'already exists');
 	}
-	return true;
-}
-
-async function getGroups() {
-	return new Promise(function(resolve, reject) {
-		linuxUser.getGroups(function(err, info) {
-			if(err) {
-				reject(err);
-			} else {
-				resolve(info);
-			}
-		});
-	});
-}
-
-function findGroup(groups, name) {
-	var group = groups.find((el) => {
-		return el.groupname === name;
-	});
-	return group;
-}
-
-async function addGroup(name) {
-	return new Promise(function(resolve, reject) {
-		linuxUser.addGroup(name, function(err, info) {
-			if(err) {
-				reject(err);
-			} else {
-				resolve(info);
-			}
-		});
-	});
 }
 
 // Edit sudoers
@@ -109,65 +76,19 @@ async function makeSudoers(groupName) {
 // Add non root user
 
 async function addNonRootUser(userName, sudoersGroup) {
-	var existing = await findUser(userName);
+	var existing = await linuxUser.getUserInfo(userName);
+	
 	if(existing) {
 		console.log(userName, 'already exists');
 	} else {
-		await addUser(userName);
+		await linuxUser.addUser(userName);
 		console.log(userName, 'added');
 	}
 
-	await addUserToGroup(userName, sudoersGroup);
+	await linuxUser.addUserToGroup(userName, sudoersGroup);
 
+	// Set user's shell to bash
 	shelljs.exec('chsh -s /bin/bash ' + userName);
-}
-
-async function findUser(userName) {
-	return new Promise(function(res, rej) {
-		linuxUser.getUserInfo(userName, function(err, user) {
-			if(err) {
-				rej(err);
-			} else {
-				res(user);
-			}
-		});
-	});
-}
-
-async function addUser(userName) {
-	return new Promise(function(res, rej) {
-		linuxUser.addUser(userName, function(err, user) {
-			if(err) {
-				rej(err);
-			} else {
-				res(user);
-			}
-		});
-	});
-}
-
-async function addUserToGroup(userName, groupName) {
-	return new Promise((res, rej) => {
-		linuxUser.addUserToGroup(userName, groupName, function(err) {
-			if(err) {
-				rej(err);
-			} else {
-				res();
-			}
-		});
-	});
-}
-
-async function getUserInfo(userName) {
-	return new Promise((res, rej) => {
-		linuxUser.getUserInfo(userName, function(err, info) {
-			if(err) {
-				rej(err);
-			} else {
-				res(info);
-			}
-		});
-	});
 }
 
 // Setup SSH
@@ -182,7 +103,7 @@ async function setupSSH(pathToKey, userName, pathToSSHDConfig) {
 
 async function installSSHKey(keyPath, userName) {
 
-	var userInfo = await getUserInfo(userName);
+	var userInfo = await linuxUser.getUserInfo(userName);
 	var homePath = userInfo.homedir;
 	var dstKeyDir = path.join(homePath, '.ssh');
 	var dstKeyPath = path.join(dstKeyDir, 'authorized_keys');
