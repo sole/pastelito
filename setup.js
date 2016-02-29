@@ -1,10 +1,15 @@
 import 'babel-polyfill';
 
+var promisify = require('promisify-node');
 var fs = require('fs');
 var path = require('path');
 var chalk = require('chalk');
 var shelljs = require('shelljs');
+var mkdirp = require('mkdirp-then');
+var chownr = promisify('chownr');
 var linuxUser = require('linux-user');
+
+console.log(chownr);
 
 console.log(chalk.black(chalk.bgYellow('*** pastelito lazy installer FTW ***')));
 
@@ -14,6 +19,7 @@ var settings = require(path.join(configPath, 'settings'));
 
 var groupName = settings.groupName;
 var nonRootUser = settings.userName;
+var sshKeyPath = path.join(configPath, 'default-ssh-key.pub');
 
 main().then(function() {
 	console.log(chalk.blue('fin'));
@@ -27,7 +33,7 @@ async function main() {
 	await addGroupIfNotExists(groupName);
 	await makeSudoers(groupName);
 	await addNonRootUser(nonRootUser, groupName);
-	await setupSSH(nonRootUser);
+	await setupSSH(sshKeyPath, nonRootUser);
 }
 
 // Add wheel group
@@ -149,12 +155,53 @@ async function addUserToGroup(userName, groupName) {
 	});
 }
 
+async function getUserInfo(userName) {
+	return new Promise((res, rej) => {
+		linuxUser.getUserInfo(userName, function(err, info) {
+			if(err) {
+				rej(err);
+			} else {
+				res(info);
+			}
+		});
+	});
+}
+
 // Setup SSH
 
-async function setupSSH(userName) {
+async function setupSSH(pathToKey, userName) {
 	console.log('setup SSH');
-	return new Promise((res, rej) => {
 
-		// 
-	});
+	await installSSHKey(pathToKey, userName);
+	// setupSSHD(pathToSSHDConfig);
+
+	//return new Promise((res, rej) => {
+		
+	//});
+}
+
+async function installSSHKey(keyPath, userName) {
+
+	var userInfo = await getUserInfo(userName);
+	var homePath = userInfo.homedir;
+	var dstKeyDir = path.join(homePath, '.ssh');
+	var dstKeyPath = path.join(dstKeyDir, 'authorized_keys');
+
+	// Copy contents of keyPath to homePath/.ssh/authorized_keys
+	// We're assuming that this is a 'from scratch' installation
+	// and so will mercilessly overwrite the file
+	await mkdirp(dstKeyDir);
+
+	var keyContents = fs.readFileSync(keyPath, 'utf-8');
+	fs.writeFileSync(dstKeyPath, keyContents, 'utf-8');
+
+	// chown -R bob:bob ~/.ssh
+	await chownr(dstKeyDir, userInfo.uid, userInfo.gid);
+
+	// chmod 700 ~/.ssh
+	shelljs.chmod('700', dstKeyDir);
+
+	// chmod 600 ~/.ssh/authorized_keys
+	shelljs.chmod('600', dstKeyPath);
+
 }
