@@ -7,4 +7,4 @@ PubkeyAuthentication yes
 PermitEmptyPasswords no
 ChallengeResponseAuthentication no
 PasswordAuthentication no
-UsePAM no
+UsePAM yes
