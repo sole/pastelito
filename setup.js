@@ -138,6 +138,8 @@ function setupSSHD(pathToSSHDConfig) {
 // Setup iptables
 
 function setupIpTables(pathToConfig, pathToStartScript) {
+	console.log('setting up firewall');
+	
 	var configFile = '/etc/iptables.up.rules';
 	var startScript = '/etc/network/if-pre-up.d/iptables';
 	
