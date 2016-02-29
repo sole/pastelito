@@ -1,14 +1,19 @@
 import 'babel-polyfill';
 
 var fs = require('fs');
+var path = require('path');
 var chalk = require('chalk');
 var shelljs = require('shelljs');
 var linuxUser = require('linux-user');
 
 console.log(chalk.black(chalk.bgYellow('*** pastelito lazy installer FTW ***')));
 
-var groupName = 'wheel';
-var nonRootUser = 'fulanito';
+// '..' because we're running out of 'output' when compiled
+var configPath = path.join(__dirname, '..', 'config_files');
+var settings = require(path.join(configPath, 'settings'));
+
+var groupName = settings.groupName;
+var nonRootUser = settings.userName;
 
 main().then(function() {
 	console.log(chalk.blue('fin'));
