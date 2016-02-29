@@ -26,7 +26,8 @@ main().then(function() {
 async function main() {
 	await addGroupIfNotExists(groupName);
 	await makeSudoers(groupName);
-	await addNonRootUser(nonRootUser);
+	await addNonRootUser(nonRootUser, groupName);
+	await setupSSH(nonRootUser);
 }
 
 // Add wheel group
@@ -99,7 +100,7 @@ async function makeSudoers(groupName) {
 
 // Add non root user
 
-async function addNonRootUser(userName) {
+async function addNonRootUser(userName, sudoersGroup) {
 	var existing = await findUser(userName);
 	if(existing) {
 		console.log(userName, 'already exists');
@@ -107,6 +108,9 @@ async function addNonRootUser(userName) {
 		await addUser(userName);
 		console.log(userName, 'added');
 	}
+
+	await addUserToGroup(userName, sudoersGroup);
+
 }
 
 async function findUser(userName) {
@@ -130,5 +134,27 @@ async function addUser(userName) {
 				res(user);
 			}
 		});
+	});
+}
+
+async function addUserToGroup(userName, groupName) {
+	return new Promise((res, rej) => {
+		linuxUser.addUserToGroup(userName, groupName, function(err) {
+			if(err) {
+				rej(err);
+			} else {
+				res();
+			}
+		});
+	});
+}
+
+// Setup SSH
+
+async function setupSSH(userName) {
+	console.log('setup SSH');
+	return new Promise((res, rej) => {
+
+		// 
 	});
 }
