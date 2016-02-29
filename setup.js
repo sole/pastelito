@@ -20,6 +20,7 @@ var settings = require(path.join(configPath, 'settings'));
 var groupName = settings.groupName;
 var nonRootUser = settings.userName;
 var sshKeyPath = path.join(configPath, 'default-ssh-key.pub');
+var sshConfigPath = path.join(configPath, 'sshd_config');
 
 main().then(function() {
 	console.log(chalk.blue('fin'));
@@ -33,7 +34,7 @@ async function main() {
 	await addGroupIfNotExists(groupName);
 	await makeSudoers(groupName);
 	await addNonRootUser(nonRootUser, groupName);
-	await setupSSH(sshKeyPath, nonRootUser);
+	await setupSSH(sshKeyPath, nonRootUser, sshConfigPath);
 }
 
 // Add wheel group
@@ -169,15 +170,11 @@ async function getUserInfo(userName) {
 
 // Setup SSH
 
-async function setupSSH(pathToKey, userName) {
+async function setupSSH(pathToKey, userName, pathToSSHDConfig) {
 	console.log('setup SSH');
 
 	await installSSHKey(pathToKey, userName);
-	// setupSSHD(pathToSSHDConfig);
-
-	//return new Promise((res, rej) => {
-		
-	//});
+	setupSSHD(pathToSSHDConfig);
 }
 
 async function installSSHKey(keyPath, userName) {
@@ -203,5 +200,18 @@ async function installSSHKey(keyPath, userName) {
 
 	// chmod 600 ~/.ssh/authorized_keys
 	shelljs.chmod('600', dstKeyPath);
+}
 
+function setupSSHD(pathToSSHDConfig) {
+	console.log('setupSSHD', pathToSSHDConfig);
+
+	var pathToConfig = '/etc/ssh/sshd_config';
+	var pathToConfigBackup = pathToConfig + '.backup';
+
+	if(!fs.existsSync(pathToConfigBackup)) {
+		console.log('make backup', pathToConfigBackup);
+		shelljs.cp(pathToConfig, pathToConfigBackup);
+	}
+
+	shelljs.cp(pathToSSHDConfig, pathToConfig);
 }
