@@ -5,9 +5,8 @@
   "main": "setup.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "pre-compile": "mkdirp output",
+    "precompile": "mkdirp output",
     "compile": "babel setup.js > output/compiled.js",
-    "pre-run": "npm run compile",
     "run": "node output/compiled.js"
   },
   "repository": {
