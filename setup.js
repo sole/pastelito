@@ -9,8 +9,6 @@ var mkdirp = require('mkdirp-then');
 var chownr = promisify('chownr');
 var linuxUser = require('linux-user');
 
-console.log(chownr);
-
 console.log(chalk.black(chalk.bgYellow('*** pastelito lazy installer FTW ***')));
 
 // '..' because we're running out of 'output' when compiled
@@ -21,6 +19,8 @@ var groupName = settings.groupName;
 var nonRootUser = settings.userName;
 var sshKeyPath = path.join(configPath, 'default-ssh-key.pub');
 var sshConfigPath = path.join(configPath, 'sshd_config');
+var ipTablesConfigPath = path.join(configPath, 'iptables.conf');
+var ipTablesStartScript = path.join(configPath, 'iptables-start.sh');
 
 main().then(function() {
 	console.log(chalk.blue('fin'));
@@ -35,6 +35,7 @@ async function main() {
 	await makeSudoers(groupName);
 	await addNonRootUser(nonRootUser, groupName);
 	await setupSSH(sshKeyPath, nonRootUser, sshConfigPath);
+	await setupIpTables(ipTablesConfigPath, ipTablesStartScript);
 }
 
 // Add wheel group
@@ -118,6 +119,7 @@ async function addNonRootUser(userName, sudoersGroup) {
 
 	await addUserToGroup(userName, sudoersGroup);
 
+	shelljs.exec('chsh -s /bin/bash ' + userName);
 }
 
 async function findUser(userName) {
@@ -175,6 +177,7 @@ async function setupSSH(pathToKey, userName, pathToSSHDConfig) {
 
 	await installSSHKey(pathToKey, userName);
 	setupSSHD(pathToSSHDConfig);
+	shelljs.exec('restart ssh');
 }
 
 async function installSSHKey(keyPath, userName) {
@@ -206,12 +209,31 @@ function setupSSHD(pathToSSHDConfig) {
 	console.log('setupSSHD', pathToSSHDConfig);
 
 	var pathToConfig = '/etc/ssh/sshd_config';
-	var pathToConfigBackup = pathToConfig + '.backup';
-
-	if(!fs.existsSync(pathToConfigBackup)) {
-		console.log('make backup', pathToConfigBackup);
-		shelljs.cp(pathToConfig, pathToConfigBackup);
-	}
+	backupFile(pathToConfig);
 
 	shelljs.cp(pathToSSHDConfig, pathToConfig);
+}
+
+// Setup iptables
+
+function setupIpTables(pathToConfig, pathToStartScript) {
+	var configFile = '/etc/iptables.up.rules';
+	var startScript = '/etc/network/if-pre-up.d/iptables';
+	
+	backupFile(configFile);
+	shelljs.cp(pathToConfig, configFile);
+	shelljs.exec('/sbin/iptables-restore < /etc/iptables.up.rules');
+
+	// set to start automatically
+	shelljs.cp(pathToStartScript, startScript);
+	shelljs.chmod('+x', startScript);
+}
+
+function backupFile(pathToFile) {
+	var pathToBackup = pathToFile + '.backup';
+
+	if(fs.existsSync(pathToFile) && !fs.existsSync(pathToBackup)) {
+		console.log('backing up', pathToFile, '=>', pathToBackup);
+		shelljs.cp(pathToFile, pathToBackup);
+	}
 }
