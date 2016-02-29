@@ -8,6 +8,7 @@ var linuxUser = require('linux-user');
 console.log(chalk.black(chalk.bgYellow('*** pastelito lazy installer FTW ***')));
 
 var groupName = 'wheel';
+var nonRootUser = 'fulanito';
 
 main().then(function() {
 	console.log(chalk.blue('fin'));
@@ -20,6 +21,7 @@ main().then(function() {
 async function main() {
 	await addGroupIfNotExists(groupName);
 	await makeSudoers(groupName);
+	await addNonRootUser(nonRootUser);
 }
 
 // Add wheel group
@@ -86,5 +88,42 @@ async function makeSudoers(groupName) {
 		}
 
 		res();
+	});
+}
+
+
+// Add non root user
+
+async function addNonRootUser(userName) {
+	var existing = await findUser(userName);
+	if(existing) {
+		console.log(userName, 'already exists');
+	} else {
+		await addUser(userName);
+		console.log(userName, 'added');
+	}
+}
+
+async function findUser(userName) {
+	return new Promise(function(res, rej) {
+		linuxUser.getUserInfo(userName, function(err, user) {
+			if(err) {
+				rej(err);
+			} else {
+				res(user);
+			}
+		});
+	});
+}
+
+async function addUser(userName) {
+	return new Promise(function(res, rej) {
+		linuxUser.addUser(userName, function(err, user) {
+			if(err) {
+				rej(err);
+			} else {
+				res(user);
+			}
+		});
 	});
 }
