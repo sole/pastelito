@@ -1,8 +1,8 @@
 import 'babel-polyfill';
 
-var promisify = require('promisify-node');
 var fs = require('fs');
 var path = require('path');
+var promisify = require('promisify-node');
 var chalk = require('chalk');
 var shelljs = require('shelljs');
 var mkdirp = require('mkdirp-then');
@@ -13,7 +13,14 @@ console.log(chalk.black(chalk.bgYellow('*** pastelito lazy installer FTW ***')))
 
 // '..' because we're running out of 'output' when compiled
 var configPath = path.join(__dirname, '..', 'config_files');
-var settings = require(path.join(configPath, 'settings'));
+var settingsPath = path.join(configPath, 'settings');
+
+if(!fs.existsSync(settingsPath)) {
+	console.log(chalk.red(settingsPath, 'not found. Use ./config_files/settings-default.js as a guide to create your own settings.js file.'));
+	process.exit(-1);
+}
+
+var settings = require(settingsPath);
 
 var groupName = settings.groupName;
 var nonRootUser = settings.userName;

@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "precompile": "mkdirp output",
     "compile": "babel setup.js > output/compiled.js",
+    "prerun": "npm run compile",
     "run": "node output/compiled.js"
   },
   "repository": {
