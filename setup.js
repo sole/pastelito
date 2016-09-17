@@ -105,7 +105,7 @@ async function setupSSH(pathToKey, userName, pathToSSHDConfig) {
 
 	await installSSHKey(pathToKey, userName);
 	setupSSHD(pathToSSHDConfig);
-	shelljs.exec('restart ssh');
+	shelljs.exec('service sshd restart');
 }
 
 async function installSSHKey(keyPath, userName) {
