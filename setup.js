@@ -13,7 +13,7 @@ console.log(chalk.black(chalk.bgYellow('*** pastelito lazy installer FTW ***')))
 
 // '..' because we're running out of 'output' when compiled
 var configPath = path.join(__dirname, '..', 'config_files');
-var settingsPath = path.join(configPath, 'settings');
+var settingsPath = path.join(configPath, 'settings.js');
 
 if(!fs.existsSync(settingsPath)) {
 	console.log(chalk.red(settingsPath, 'not found. Use ./config_files/settings-default.js as a guide to create your own settings.js file.'));
